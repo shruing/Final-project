@@ -130,7 +130,100 @@
             });
             requestAnimationFrame(animate);
         }
-
         setup();
+        function initializePlanet(planetRadius) {
+    let orbitalRing = new THREE.Mesh(
+        new THREE.RingGeometry(planetRadius + 80, planetRadius + 79.7, 100, 1),
+        new THREE.MeshBasicMaterial({ color: "#517878", side: THREE.DoubleSide })
+    );
+    orbitalRing.rotation.set(-Math.PI * 0.45, Math.PI * 0.1, 0);
+
+    let planetGeometry = new THREE.SphereGeometry(planetRadius, 32, 32);
+    let planetTexture = new THREE.TextureLoader().load("assets/planet/earth.jpg");
+    let bumpTexture = new THREE.TextureLoader().load("assets/planet/bump.jpg");
+    let specularTexture = new THREE.TextureLoader().load("assets/planet/spec.jpg");
+    let planetMaterial = new THREE.MeshPhongMaterial({
+        shininess: 40,
+        bumpScale: 1,
+        map: planetTexture,
+        bumpMap: bumpTexture,
+        specularMap: specularTexture
+    });
+    let planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    scene.add(planetMesh);
+
+    let cloudsTexture = new THREE.TextureLoader().load('assets/planet/clouds.png');
+    let cloudsGeometry = new THREE.SphereGeometry(planetRadius + 5, 32, 32);
+    let cloudsMaterial = new THREE.MeshBasicMaterial({
+        map: cloudsTexture,
+        transparent: true,
+        opacity: 0.7
+    });
+    let cloudsMesh = new THREE.Mesh(cloudsGeometry, cloudsWaiterial);
+    scene.add(cloudsMesh);
+
+    let newPosition = new THREE.Vector3(0, 0, 300);
+    smoothCameraTransition(camera.position, newPosition, orbit.target, orbit.target);
+}
+
+function setupGalacticSystem(systemRadius, systemSize, systemPosition, textureUrl) {
+    let orbitalPath = new THREE.Mesh(
+        new THREE.RingGeometry(systemSize - 1.8, systemSize, 100, 1),
+        new THREE.MeshBasicMaterial({ color: "#517878", side: THREE.DoubleSide })
+    );
+    orbitalPath.name = "galacticOrbit"
+
+    let centralObject = new THREE.Mesh(); 
+    let luminousBody = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: THREE.ImageUtils.loadTexture(textureUrl),
+        side: THREE.DoubleSide
+    }));
+    luminousBody.name = "centralStar"
+    luminousBody.scale.set(systemSize, systemSize, systemSize);
+
+    let pivot = new THREE.Object3D();
+    pivot.add(luminousBody);
+    pivot.add(orbitalPath);
+    centralObject.add(pivot);
+    centralObject.rotation.set(systemPosition.x, systemPosition.y, systemPosition.z);
+    centralObject.position.set(systemPosition.x, systemPosition.y, systemPosition.z);
+    centralObject.name = "galacticCenter"
+
+    return centralObject;
+}
+
+function generateGalaxies() {
+    let textures = [
+        "assets/galaxies/BANU.png", "assets/galaxies/DEV.png", "assets/galaxies/UEE.png",
+        "assets/galaxies/UNC.png", "assets/galaxies/VNCL.png", "assets/galaxies/XIAN.png"
+    ];
+    for (let i = 0; i < 100; i++) {
+        let textureIndex = Math.floor(Math.random() * textures.length);
+        let randomPosition = new THREE.Vector3(
+            THREE.Math.randFloatSpread(2000),
+            THREE.Math.randFloatSpread(1000),
+            THREE.Math.randFloatSpread(2000)
+        );
+        galaxyGroup.add(setupGalacticSystem(30, 17, randomPosition, textures[textureIndex]));
+    }
+}
+
+function smoothCameraTransition(fromPosition, toPosition, fromTarget, toTarget) {
+    let cameraTween = new TWEEN.Tween({
+        x1: fromPosition.x, y1: fromPosition.y, z1: fromPosition.z,
+        x2: fromTarget.x, y2: fromTarget.y, z2: fromTarget.z
+    });
+    cameraTween.to({
+        x1: toPosition.x, y1: toPosition.y, z1: toPosition.z,
+        x2: toTarget.x, y2: toTarget.y, z2: toTarget.z
+    }, 2000);
+    cameraTween.onUpdate(function() {
+        camera.position.set(this.x1, this.y1, this.z1);
+        orbit.target.set(this.x2, this.y2, this.z2);
+        orbit.update();
+    });
+    cameraTween.easing(TWEEN.Easing.Cubic.InOut);
+    cameraTween.start();
+}
     </script>
 </body>
