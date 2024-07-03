@@ -1,0 +1,136 @@
+<head>
+    <title>ThreeJS Satellite Visualization</title>
+    <meta charset="UTF-8">
+    <script src="libs/three.min.js"></script>
+    <script src="libs/OrbitControls.js"></script>
+    <script src="libs/dat.gui.min.js"></script>
+    <script src="libs/Tween.js"></script>
+    <style>
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #000 url(assets/bgImage/space.jpg) no-repeat center;
+            background-size: cover;
+        }
+        #container {
+            position: absolute;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="backgroundCanvas"></canvas>
+    <div id="container"></div>
+    <script>
+        class StarField {
+            constructor(ctx, width, height, number) {
+                this.context = ctx;
+                this.width = width * 2;
+                this.height = height * 2;
+                this.number = number;
+                this.starsArray = [];
+                this.initializeStars();
+            }
+
+            initializeStars() {
+                for (let i = 0; i < this.number; i++) {
+                    let star = {
+                        x: Math.random() * this.width,
+                        y: Math.random() * this.height,
+                        radius: Math.random() + 1
+                    };
+                    this.starsArray.push(star);
+                }
+            }
+
+            drawStars() {
+                this.context.save();
+                this.starsArray.forEach(star => {
+                    this.context.fillStyle = this.selectColor();
+                    this.context.beginPath();
+                    this.context.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                    this.context.fill();
+                });
+                this.context.restore();
+            }
+
+            selectColor() {
+                return Math.random() < 0.5 ? '#d6edff' : '#858bc5';
+            }
+        }
+
+        class ShootingStar {
+            constructor(ctx, canvasWidth, canvasHeight) {
+                this.context = ctx;
+                this.canvasWidth = canvasWidth * 2;
+                this.canvasHeight = canvasHeight * 2;
+                this.initializeMeteor();
+            }
+
+            initializeMeteor() {
+                this.x = Math.random() * this.canvasWidth;
+                this.y = Math.random() * this.canvasHeight / 2;
+                this.velocity = Math.floor(Math.random() * 5 + 2);
+                this.meteorImg = new Image();
+                this.meteorImg.src = "assets/earth/meteor.png";
+            }
+
+            drawMeteor() {
+                this.context.save();
+                this.context.drawImage(this.meteorImg, this.x, this.y);
+                this.context.restore();
+            }
+
+            updatePosition() {
+                this.context.clearRect(this.x, this.y, 166, 130);
+                this.x -= this.velocity;
+                this.y += this.velocity;
+                this.drawMeteor();
+            }
+
+            resetMeteor() {
+                return this.y > this.canvasHeight;
+            }
+        }
+
+        let canvas, context, stars, meteors = [];
+        function setup() {
+            let canvasWidth = document.documentElement.clientWidth;
+            let canvasHeight = document.documentElement.clientHeight;
+            canvas = document.getElementById("backgroundCanvas");
+            context = canvas.getContext('2d');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            stars = new StarField(context, canvasWidth, canvasHeight, 50);
+            stars.drawStars();
+            createMeteors();
+            requestAnimationFrame(animate);
+        }
+
+        function createMeteors() {
+            for (let i = 0; i < 2; i++) {
+                let meteor = new ShootingStar(context, canvas.width, canvas.height);
+                meteor.drawMeteor();
+                meteors.push(meteor);
+            }
+        }
+
+        function animate() {
+            stars.drawStars();
+
+            meteors = meteors.filter(meteor => {
+                if (meteor.resetMeteor()) {
+                    meteor.initializeMeteor();
+                    meteor.drawMeteor();
+                    return true;
+                }
+
+                meteor.updatePosition();
+                return true;
+            });
+            requestAnimationFrame(animate);
+        }
+
+        setup();
+    </script>
+</body>
